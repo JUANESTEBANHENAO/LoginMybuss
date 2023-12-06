@@ -8,6 +8,5 @@ let generateToken = (properties, key, expiration, delay=0) => {
     return jwt.compact();
 }
 
-
 module.exports = generateToken;
   

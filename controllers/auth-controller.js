@@ -1,37 +1,57 @@
-const bcrypt = require('bcryptjs');  // Importa la biblioteca para el hash de contraseñas
-const signingKey = require('../config/keys');  // Importa la clave de firma (signing key)
-const generateToken = require('../helpers/generator-token');  // Importa la función para generar tokens JWT
-
-// Función para autenticación
+const signingKey = require("../config/keys");
+const generateToken = require("../helpers/generator-token");
+const User = require("../models/user");
+const userRepository = require("../repositories/userRepository");
+const driverRepository = require("../repositories/driverRepository");
 let auth = (req, res) => {
-  let email = req.body.email;  // Obtiene el correo electrónico desde la solicitud
-  let password = req.body.password;  // Obtiene la contraseña desde la solicitud
-  let rol = req.body.rol;  // Obtiene el rol desde la solicitud
-  console.log("Email", email);  // Imprime el correo electrónico en la consola
-  console.log("Password", password);  // Imprime la contraseña en la consola
+  let documento = req.body.Documento;
+  let contraseña = req.body.Contraseña;
+  console.log(documento);
+  console.log(contraseña);
 
-  // Genera un token JWT con información de correo electrónico y rol, con una fecha de vencimiento
-  let token = generateToken(
-    { email: email, rol: rol }, signingKey.SIGNING_KEY_TOKEN,
-    new Date().getTime() + (100 * 60 * 1000)  // El token expirará en 100 minutos
-  );
+  userRepository.login(documento, contraseña, (result, err) => {
+    if (err) {
+      res.status(500).json({ message: "Error en el servidor", err });
+    } else {
+      if (result.length > 0) {
+        let token = generateToken(
+          new User(result[0]),
+          signingKey.SIGNING_KEY_TOKEN,
+          new Date().getTime() + 100 * 60 * 1000
+        );
 
-  // Configuración de la cookie para el token de actualización
-  let cookieConfig = {
-    domain: 'localhost',
-    path: '/refresh', 
-    secure: false,  
-    expires: new Date(Date.now() + 300000),
-    httpOnly: true, 
-    signed: true 
-  }
+        res.status(200).json({ message: "Inicio de sesión exitoso", token });
+      } else {
+        res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+      }
+    }
+  });
+};
 
-  return res.status(200).cookie('refresh_token', email, cookieConfig)
-    .json({
-      status: 'Successful authentication', token: token
-    });
-}
+let authDriver = (req, res) => {
+  let Cedula = req.body.Cedula;
+  let contraseña = req.body.Contraseña;
+
+  driverRepository.auth(Cedula, contraseña, (result, err) => {
+    if (err) {
+      res.status(500).json({ message: "Error en el servidor", err });
+    } else {
+      if (result.length > 0) {
+        let token = generateToken(
+          new User(result[0]),
+          signingKey.SIGNING_KEY_TOKEN,
+          new Date().getTime() + 100 * 60 * 1000
+        );
+
+        res.status(200).json({ message: "Inicio de sesión exitoso", token });
+      } else {
+        res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+      }
+    }
+  });
+};
 
 module.exports = {
-  auth
-}
+  auth,
+  authDriver,
+};

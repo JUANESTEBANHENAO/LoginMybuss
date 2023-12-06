@@ -1,6 +1,5 @@
 const sql = require("mssql");
 
-
 const config = {
   server: "MyBussDB.mssql.somee.com",
   user: "MyBuss_SQLLogin_1",
@@ -12,17 +11,17 @@ const config = {
   },
 };
 
-class UserRepository {
+class driverRepository {
   //metodo para obtener un token de usuario en caso de que exista
-  static login = async (documento, contraseña, callback) => {
+  static auth = async (cedula, contraseña, callback) => {
     try {
       await sql.connect(config);
       const request = new sql.Request();
-      const query = `EXEC usp_iniciarSesion @Documento = '${documento}', @contraseña = '${contraseña}'`;
+      const query = `EXEC usp_iniciarSesionConductor @Cedula = '${cedula}', @contraseña = '${contraseña}'`;
       const result = await request.query(query);
       callback(result.recordset);
     } catch (err) {
-      console.log(err)
+      console.log(err);
       callback(null, err);
     } finally {
       sql.close();
@@ -30,4 +29,4 @@ class UserRepository {
   };
 }
 
-module.exports = UserRepository;
+module.exports = driverRepository;
